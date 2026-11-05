@@ -62,6 +62,7 @@ import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -624,7 +625,11 @@ public struct NavigationStack : View, Renderable {
                 let topPadding = effectiveTopBarBottomPx <= Float(0.0) && arguments.ignoresSafeAreaEdges.contains(.top) ? windowSafeDrawingInsets().asPaddingValues().calculateTopPadding() : 0.dp
                 var bottomPadding = 0.dp
                 if bottomBarTopPx.value <= Float(0.0) && arguments.ignoresSafeAreaEdges.contains(.bottom) {
-                    bottomPadding = max(0.dp, windowSafeDrawingInsets().asPaddingValues().calculateBottomPadding() - windowKeyboardInsets().asPaddingValues().calculateBottomPadding())
+                    // The clamped padding stays constant through most of the IME animation; deriving it keeps
+                    // per-frame inset updates from recomposing this entire content scope during keyboard transitions
+                    let safeDrawingInsets = windowSafeDrawingInsets()
+                    let keyboardInsets = windowKeyboardInsets()
+                    bottomPadding = remember(safeDrawingInsets, keyboardInsets) { derivedStateOf { max(0.dp, safeDrawingInsets.asPaddingValues().calculateBottomPadding() - keyboardInsets.asPaddingValues().calculateBottomPadding()) } }.value
                 }
                 let contentModifier = Modifier.fillMaxWidth().weight(Float(1.0)).padding(top: topPadding, bottom: bottomPadding)
 
@@ -738,7 +743,11 @@ public struct NavigationStack : View, Renderable {
                 if bottomBarHeightPx.value > Float(0.0) {
                     bottomPadding = with(density) { bottomBarHeightPx.value.toDp() }
                 } else if arguments.ignoresSafeAreaEdges.contains(.bottom) {
-                    bottomPadding = max(0.dp, windowSafeDrawingInsets().asPaddingValues().calculateBottomPadding() - windowKeyboardInsets().asPaddingValues().calculateBottomPadding())
+                    // The clamped padding stays constant through most of the IME animation; deriving it keeps
+                    // per-frame inset updates from recomposing this entire content scope during keyboard transitions
+                    let safeDrawingInsets = windowSafeDrawingInsets()
+                    let keyboardInsets = windowKeyboardInsets()
+                    bottomPadding = remember(safeDrawingInsets, keyboardInsets) { derivedStateOf { max(0.dp, safeDrawingInsets.asPaddingValues().calculateBottomPadding() - keyboardInsets.asPaddingValues().calculateBottomPadding()) } }.value
                 } else {
                     bottomPadding = 0.dp
                 }
